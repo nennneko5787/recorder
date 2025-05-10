@@ -1,0 +1,6 @@
+git+https://github.com/Rapptz/discord.py
+pynacl
+git+https://github.com/imayhaveborkedit/discord-ext-voice-recv.git
+numpy
+scipy
+pydub
