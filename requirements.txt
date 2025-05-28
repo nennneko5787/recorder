@@ -5,3 +5,7 @@ numpy
 scipy
 pydub
 python-dotenv
+aiofiles
+pillow
+requests
+google-genai
