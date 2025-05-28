@@ -73,12 +73,10 @@ class AIChatCog(commands.Cog):
             return
 
         async with message.channel.typing():
-            content = await self.chat.send_message(message.clean_content)
-            await message.reply(
-                discord.utils.escape_mentions(content.text)
-                .replace("@everyone", "everyone")
-                .replace("@here", "here")
+            content = await self.chat.send_message(
+                message.content.replace(message.guild.me.mention, "")
             )
+            await message.reply(discord.utils.escape_mentions(content.text)[:4001])
 
 
 async def setup(bot):
