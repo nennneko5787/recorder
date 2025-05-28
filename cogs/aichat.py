@@ -77,7 +77,7 @@ class AIChatCog(commands.Cog):
             content = await self.chat.send_message(
                 message.content.replace(message.guild.me.mention, "")
             )
-            await message.reply(discord.utils.escape_mentions(content.text)[:4001])
+            await message.reply(discord.utils.escape_mentions(content.text)[:2000])
 
 
 async def setup(bot):
