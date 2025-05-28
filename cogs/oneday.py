@@ -312,9 +312,8 @@ class OneDayCog(commands.Cog):
         )
 
         await channel.send(
-            f"{message.author.mention} さんが**{self.coin[message.author.id]}**回目のコインロール獲得です！"
+            f"{message.author.mention} さんが**{self.coin[message.author.id]}**回目のコインロール獲得です！\nタイム: {between}秒"
         )
-        await channel.send(f"タイム: {between}秒")
 
         def check(m: discord.Message):
             return m.channel == channel and m.author != message.author
