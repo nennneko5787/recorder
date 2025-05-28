@@ -58,9 +58,6 @@ class AIChatCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if message.guild.me not in message.mentions:
-            return
-
         if message.content == "hclear":
             await message.reply("👍")
             self.chat = self.genai.aio.chats.create(
@@ -70,6 +67,9 @@ class AIChatCog(commands.Cog):
                     safety_settings=SAFETY_SETTINGS,
                 ),
             )
+            return
+
+        if message.guild.me not in message.mentions:
             return
 
         async with message.channel.typing():
