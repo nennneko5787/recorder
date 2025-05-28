@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Dict
 
 import discord
 import dotenv
@@ -49,19 +49,13 @@ class AIChatCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.genai = genai.Client(api_key=os.getenv("gemini"))
-        self.chat = self.genai.aio.chats.create(
-            model="gemini-2.0-flash",
-            config=types.GenerateContentConfig(
-                system_instruction=systemInstruct,
-                safety_settings=SAFETY_SETTINGS,
-            ),
-        )
+        self.chats: Dict[int, types.Chat] = {}
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.content == "hclear":
             await message.reply("👍")
-            self.chat = self.genai.aio.chats.create(
+            self.chats[message.author.id] = self.genai.aio.chats.create(
                 model="gemini-2.0-flash",
                 config=types.GenerateContentConfig(
                     system_instruction=systemInstruct,
@@ -73,8 +67,17 @@ class AIChatCog(commands.Cog):
         if message.guild.me not in message.mentions:
             return
 
+        if message.author.id not in self.chats:
+            self.chats[message.author.id] = self.genai.aio.chats.create(
+                model="gemini-2.0-flash",
+                config=types.GenerateContentConfig(
+                    system_instruction=systemInstruct,
+                    safety_settings=SAFETY_SETTINGS,
+                ),
+            )
+
         async with message.channel.typing():
-            content = await self.chat.send_message(
+            content = await self.chats[message.author.id].send_message(
                 message.content.replace(message.guild.me.mention, "")
             )
             await message.reply(discord.utils.escape_mentions(content.text)[:2000])
