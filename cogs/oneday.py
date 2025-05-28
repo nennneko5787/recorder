@@ -316,7 +316,7 @@ class OneDayCog(commands.Cog):
         )
 
         def check(m: discord.Message):
-            return m.channel == channel and m.author != message.author
+            return m.channel == channel and not m.author.bot and m.author != message.author
 
         try:
             msg1 = await self.bot.wait_for("message", check=check)
@@ -330,6 +330,7 @@ class OneDayCog(commands.Cog):
         def check(m: discord.Message):
             return (
                 m.channel == channel
+                and not m.author.bot
                 and m.author != message.author
                 and m.author != msg1.author
             )
