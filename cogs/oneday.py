@@ -319,11 +319,14 @@ class OneDayCog(commands.Cog):
         def check(m: discord.Message):
             return m.channel == channel and m.author != message.author
 
-        msg1 = await self.bot.wait_for("message", check=check)
-
-        if not msg1.author.id in self.lateness:
-            self.lateness[msg1.author.id] = 0
-        self.lateness[msg1.author.id] += 2
+        try:
+            msg1 = await self.bot.wait_for("message", check=check)
+    
+            if not msg1.author.id in self.lateness:
+                self.lateness[msg1.author.id] = 0
+            self.lateness[msg1.author.id] += 2
+        except Exception as e:
+            print(e)
 
         def check(m: discord.Message):
             return (
@@ -332,11 +335,14 @@ class OneDayCog(commands.Cog):
                 and m.author != msg1.author
             )
 
-        msg2 = await self.bot.wait_for("message", check=check)
+        try:
+            msg2 = await self.bot.wait_for("message", check=check)
 
-        if not msg2.author.id in self.lateness:
-            self.lateness[msg2.author.id] = 0
-        self.lateness[msg2.author.id] += 1
+            if not msg2.author.id in self.lateness:
+                self.lateness[msg2.author.id] = 0
+            self.lateness[msg2.author.id] += 1
+        except Exception as e:
+            print(e)
 
         async with aiofiles.open("coin.json", "w") as f:
             await f.write(json.dumps(self.coin))
