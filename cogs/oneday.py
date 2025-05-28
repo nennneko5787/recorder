@@ -311,7 +311,7 @@ class OneDayCog(commands.Cog):
             }
         )
 
-        await asyncio.create_task(
+        asyncio.create_task(
             channel.send(
                 f"{message.author.mention} さんが**{self.coin[message.author.id]}**回目のコインロール獲得です！\nタイム: {between}秒"
             )
