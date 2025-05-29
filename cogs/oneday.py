@@ -1,14 +1,13 @@
 import asyncio
-import io
 import json
-from typing import Dict, List, Literal, Tuple, Union
+from typing import Dict, List, Literal, Union
 
 import aiofiles
 import discord
-import requests
 from discord import app_commands
 from discord.ext import commands
-from PIL import Image, ImageDraw, ImageFont, ImageOps
+
+from utils import imageUtils
 
 
 class OneDayCog(commands.Cog):
@@ -37,84 +36,6 @@ class OneDayCog(commands.Cog):
 
     group = app_commands.Group(name="oneday", description="1day-chatのツール類。")
 
-    def generateRankingImage(
-        self,
-        title: str,
-        ptStr: str,
-        users: List[Tuple[Union[discord.User, discord.Member, str], int]],
-        theme: Literal["ダーク", "ライト"] = "ダーク",
-    ):
-        width = 800
-        iconSize = 48
-        padding = 10
-        spacing = iconSize + 20
-        topMargin = 40
-        bottomMargin = 20
-        titleHeight = 60
-
-        height = titleHeight + topMargin + len(users) * spacing + bottomMargin
-
-        img = Image.new(
-            "RGB",
-            (width, height),
-            color=(255, 255, 255) if theme == "ライト" else (0, 0, 0),
-        )
-        draw = ImageDraw.Draw(img)
-        font = ImageFont.truetype("./fonts/NotoSansJP-Medium.ttf", 24)
-        smallFont = ImageFont.truetype("./fonts/NotoSansJP-Medium.ttf", 16)
-        titleFont = ImageFont.truetype("./fonts/NotoSansJP-Medium.ttf", 28)
-
-        titleWidth = draw.textlength(title, font=titleFont)
-        draw.text(
-            ((width - titleWidth) // 2, 20),
-            title,
-            font=titleFont,
-            fill=(0, 0, 0) if theme == "ライト" else (255, 255, 255),
-        )
-
-        yOffset = topMargin + titleHeight
-
-        for i, (user, count) in enumerate(users):
-            if isinstance(user, discord.abc.Snowflake):
-                displayName = user.display_name
-                userName = f"@{user.name}"
-                avatarUrl = user.display_avatar.replace(
-                    static_format="png", size=64
-                ).url
-                try:
-                    response = requests.get(avatarUrl)
-                    avatarImg = Image.open(io.BytesIO(response.content)).convert("RGBA")
-                    avatarImg = ImageOps.fit(
-                        avatarImg, (iconSize, iconSize), centering=(0.5, 0.5)
-                    )
-                    img.paste(avatarImg, (padding, yOffset), avatarImg)
-                except Exception:
-                    pass
-            else:
-                displayName = user
-                userName = ""
-
-            draw.text(
-                (padding + iconSize + 10, yOffset),
-                f"{i+1}位: {displayName} - " + ptStr.format(pt=count),
-                font=font,
-                fill=(0, 0, 0) if theme == "ライト" else (255, 255, 255),
-            )
-            if userName:
-                draw.text(
-                    (padding + iconSize + 10, yOffset + 30),
-                    userName,
-                    font=smallFont,
-                    fill=(100, 100, 100) if theme == "ライト" else (155, 155, 155),
-                )
-
-            yOffset += spacing
-
-        buffer = io.BytesIO()
-        img.save(buffer, format="PNG")
-        buffer.seek(0)
-        return buffer
-
     @group.command(
         name="coinrank", description="今までのコインロール取得回数のランキング。"
     )
@@ -136,16 +57,20 @@ class OneDayCog(commands.Cog):
         for user_id, count in sortedRecords:
             try:
                 user = await interaction.guild.fetch_member(user_id)
-                users.append((user, count))
+                users.append((user, count, await user.display_avatar.read()))
             except:
                 try:
                     user = await interaction.client.fetch_user(user_id)
-                    users.append((user, count))
+                    users.append((user, count, await user.display_avatar.read()))
                 except:
-                    users.append((str(user_id), count))
+                    users.append((str(user_id), count, b""))
 
         buffer = await asyncio.to_thread(
-            self.generateRankingImage, "コインロールランキング", "{pt}回", users, theme
+            imageUtils.generateRankingImage,
+            "コインロールランキング",
+            "{pt}回",
+            users,
+            theme,
         )
         file = discord.File(fp=buffer, filename="ranking.png")
         await interaction.followup.send(file=file)
@@ -180,7 +105,7 @@ class OneDayCog(commands.Cog):
                     users.append((str(user_id), spd))
 
         buffer = await asyncio.to_thread(
-            self.generateRankingImage,
+            imageUtils.generateRankingImage,
             "コインロール最速取得ランキング",
             "{pt}秒",
             users,
@@ -219,7 +144,7 @@ class OneDayCog(commands.Cog):
                     users.append((str(user_id), count))
 
         buffer = await asyncio.to_thread(
-            self.generateRankingImage,
+            imageUtils.generateRankingImage,
             "コインロール遅刻ランキング",
             "{pt}ポイント",
             users,
@@ -256,7 +181,7 @@ class OneDayCog(commands.Cog):
                     users.append((str(user_id), count))
 
         buffer = await asyncio.to_thread(
-            self.generateRankingImage,
+            imageUtils.generateRankingImage,
             "ゲイロール付与ランキング",
             "{pt}回",
             users,
@@ -318,11 +243,13 @@ class OneDayCog(commands.Cog):
         )
 
         def check(m: discord.Message):
-            return m.channel == channel and not m.author.bot and m.author != message.author
+            return (
+                m.channel == channel and not m.author.bot and m.author != message.author
+            )
 
         try:
             msg1 = await self.bot.wait_for("message", check=check)
-    
+
             if not msg1.author.id in self.lateness:
                 self.lateness[msg1.author.id] = 0
             self.lateness[msg1.author.id] += 2

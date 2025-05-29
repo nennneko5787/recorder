@@ -9,3 +9,5 @@ aiofiles
 pillow
 requests
 google-genai
+pilmoji
+emoji==1.7

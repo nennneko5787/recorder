@@ -17,7 +17,8 @@ async def setup_hook():
     await bot.load_extension("cogs.oneday")
     await bot.load_extension("cogs.stat")
     await bot.load_extension("cogs.aichat")
-    await bot.tree.sync()
+    await bot.load_extension("cogs.miq")
+    # await bot.tree.sync()
 
 
 bot.run(os.getenv("discord"))
