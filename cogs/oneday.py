@@ -96,13 +96,13 @@ class OneDayCog(commands.Cog):
             spd = round(record["speed"], 2)
             try:
                 user = await interaction.guild.fetch_member(user_id)
-                users.append((user, spd))
+                users.append((user, spd, await user.display_avatar.read()))
             except:
                 try:
                     user = await interaction.client.fetch_user(user_id)
-                    users.append((user, spd))
+                    users.append((user, spd, await user.display_avatar.read()))
                 except:
-                    users.append((str(user_id), spd))
+                    users.append((str(user_id), spd, b""))
 
         buffer = await asyncio.to_thread(
             imageUtils.generateRankingImage,
@@ -135,13 +135,13 @@ class OneDayCog(commands.Cog):
         for user_id, count in sortedRecords:
             try:
                 user = await interaction.guild.fetch_member(user_id)
-                users.append((user, count))
+                users.append((user, count, await user.display_avatar.read()))
             except:
                 try:
                     user = await interaction.client.fetch_user(user_id)
-                    users.append((user, count))
+                    users.append((user, count, await user.display_avatar.read()))
                 except:
-                    users.append((str(user_id), count))
+                    users.append((str(user_id), count, b""))
 
         buffer = await asyncio.to_thread(
             imageUtils.generateRankingImage,
@@ -172,13 +172,13 @@ class OneDayCog(commands.Cog):
         for user_id, count in sortedRecords:
             try:
                 user = await interaction.guild.fetch_member(user_id)
-                users.append((user, count))
+                users.append((user, count, await user.display_avatar.read()))
             except:
                 try:
                     user = await interaction.client.fetch_user(user_id)
-                    users.append((user, count))
+                    users.append((user, count, await user.display_avatar.read()))
                 except:
-                    users.append((str(user_id), count))
+                    users.append((str(user_id), count, b""))
 
         buffer = await asyncio.to_thread(
             imageUtils.generateRankingImage,
