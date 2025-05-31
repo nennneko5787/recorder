@@ -18,6 +18,8 @@ async def setup_hook():
     await bot.load_extension("cogs.stat")
     await bot.load_extension("cogs.aichat")
     await bot.load_extension("cogs.miq")
+    await bot.load_extension("cogs.tools")
+    await bot.load_extension("cogs.guide")
     # await bot.tree.sync()
 
 
