@@ -1,5 +1,5 @@
 import os
-from typing import List, Dict
+from typing import Dict, List
 
 import discord
 import dotenv
@@ -65,6 +65,9 @@ class AIChatCog(commands.Cog):
             return
 
         if message.guild.me not in message.mentions:
+            return
+
+        if "@silent" in message.clean_content:
             return
 
         if message.author.id not in self.chats:
