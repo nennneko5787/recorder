@@ -1,6 +1,7 @@
 import enum
 import os
 import traceback
+import time
 from typing import Dict
 
 import discord
@@ -96,6 +97,7 @@ class AIChatCog(commands.Cog):
         self.bot = bot
         self.genai = genai.Client(api_key=os.getenv("gemini"))
         self.chats: Dict[int, chats.AsyncChat] = {}
+        self.cooldown: Dict[int, float] = {}
 
     group = app_commands.Group(name="aichat", description="白角もふ関連のコマンド。")
 
@@ -143,6 +145,10 @@ class AIChatCog(commands.Cog):
                     safety_settings=SAFETY_SETTINGS,
                 ),
             )
+
+        if time.time() < self.cooldown[message.author.id]:
+            return
+        self.cooldown[message.author.id] = time.time() + 8.5787
 
         async with message.channel.typing():
             try:
