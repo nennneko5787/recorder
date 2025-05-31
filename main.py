@@ -20,7 +20,7 @@ async def setup_hook():
     await bot.load_extension("cogs.miq")
     await bot.load_extension("cogs.tools")
     await bot.load_extension("cogs.guide")
-    # await bot.tree.sync()
+    await bot.tree.sync()
 
 
 bot.run(os.getenv("discord"))

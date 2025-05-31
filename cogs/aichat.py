@@ -1,12 +1,12 @@
 import os
-from typing import Dict, List
+import traceback
+from typing import Dict
 
 import discord
 import dotenv
 from discord.ext import commands
 from google import genai
 from google.genai import chats, types
-from pydantic import TypeAdapter
 
 dotenv.load_dotenv()
 
@@ -49,7 +49,7 @@ class AIChatCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.genai = genai.Client(api_key=os.getenv("gemini"))
-        self.chats: Dict[int, types.Chat] = {}
+        self.chats: Dict[int, chats.AsyncChat] = {}
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -80,10 +80,21 @@ class AIChatCog(commands.Cog):
             )
 
         async with message.channel.typing():
-            content = await self.chats[message.author.id].send_message(
-                message.content.replace(message.guild.me.mention, "")
-            )
-            await message.reply(discord.utils.escape_mentions(content.text)[:2000])
+            try:
+                content = await self.chats[message.author.id].send_message(
+                    [message.content.replace(message.guild.me.mention, "")]
+                    + [
+                        types.Part.from_bytes(
+                            data=await f.read(), mime_type=f.content_type
+                        )
+                        for f in message.attachments
+                        if f.content_type
+                    ]
+                )
+                await message.reply(discord.utils.escape_mentions(content.text)[:2000])
+            except Exception as e:
+                traceback.print_exc()
+                await message.reply(f"機嫌が悪いらしい: `{e}`")
 
 
 async def setup(bot):
