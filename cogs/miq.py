@@ -2,17 +2,15 @@ import asyncio
 import io
 
 import discord
+import httpx
 from discord import app_commands
 from discord.ext import commands
-from PIL import Image, ImageDraw, ImageFont
-from pilmoji import Pilmoji
-
-from utils.wrap import fw_wrap
 
 
 class MiqCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.http = httpx.AsyncClient()
 
         self.makeItAQuoteContext = app_commands.ContextMenu(
             name="めーくいっとあくおーと",
@@ -20,136 +18,55 @@ class MiqCog(commands.Cog):
         )
         self.bot.tree.add_command(self.makeItAQuoteContext)
 
-    def drawText(
-        self,
-        im,
-        ofs,
-        string,
-        font="./fonts/NotoSansJP-Medium.ttf",
-        size=16,
-        color=(0, 0, 0, 255),
-        split_len=None,
-        padding=4,
-        disable_dot_wrap=False,
-    ):
-        ImageDraw.Draw(im)
-        fontObj = ImageFont.truetype(font, size=size)
-
-        pure_lines = []
-        pos = 0
-        l = ""
-
-        if not disable_dot_wrap:
-            for char in string:
-                if char == "\n":
-                    pure_lines.append(l)
-                    l = ""
-                    pos += 1
-                elif char == "、" or char == ",":
-                    pure_lines.append(l + ("、" if char == "、" else ","))
-                    l = ""
-                    pos += 1
-                elif char == "。" or char == ".":
-                    pure_lines.append(l + ("。" if char == "。" else "."))
-                    l = ""
-                    pos += 1
-                else:
-                    l += char
-                    pos += 1
-
-            if l:
-                pure_lines.append(l)
-        else:
-            pure_lines = string.split("\n")
-
-        lines = []
-
-        for line in pure_lines:
-            lines.extend(fw_wrap(line, width=split_len))
-
-        dy = 0
-
-        draw_lines = []
-
-        for line in lines:
-            tsize = fontObj.getbbox(line)
-
-            ofs_y = ofs[1] + dy
-            t_height = tsize[1]
-
-            x = int(ofs[0] - (tsize[0] / 2))
-            draw_lines.append((x, ofs_y, line))
-            ofs_y += t_height + padding
-            dy += t_height + padding
-
-        adj_y = -30 * (len(draw_lines) - 1)
-        for dl in draw_lines:
-            with Pilmoji(im) as p:
-                p.text((dl[0], (adj_y + dl[1])), dl[2], font=fontObj, fill=color)
-
-        real_y = ofs[1] + adj_y + dy
-
-        return (0, dy, real_y)
-
-    def createMakeItAQuote(
-        self, member: discord.Member, message: discord.Message, iconFile: bytes
-    ) -> io.BytesIO:
-        img = Image.new("RGBA", (1280, 720), "#00000000")
-        icon = Image.open(io.BytesIO(iconFile))
-        icon = icon.resize((720, 720), Image.Resampling.LANCZOS)
-
-        base = Image.open("base-gd.png").convert("RGBA")
-
-        img.paste(icon, (0, 0))
-        img.paste(base, (0, 0), base)
-
-        tsize_t = self.drawText(
-            img,
-            (890, 270),
-            message.content,
-            size=55,
-            color=(255, 255, 255, 255),
-            split_len=20,
-        )
-
-        name_y = tsize_t[2] + 50
-        tsize_name = self.drawText(
-            img,
-            (890, name_y),
-            f"@{member.display_name}",
-            size=28,
-            color=(255, 255, 255, 255),
-            split_len=25,
-            disable_dot_wrap=True,
-        )
-
-        id_y = name_y + tsize_name[1] + 10
-        self.drawText(
-            img,
-            (890, id_y),
-            member.name,
-            size=18,
-            color=(180, 180, 180, 255),
-            split_len=45,
-            disable_dot_wrap=True,
-        )
-
-        buffer = io.BytesIO()
-        img.save(buffer, format="PNG")
-        buffer.seek(0)
-        return buffer
-
     async def makeItAQuote(
         self, interaction: discord.Interaction, message: discord.Message
     ):
         await interaction.response.defer()
-        pic = await asyncio.to_thread(
-            self.createMakeItAQuote,
-            message.author,
-            message,
-            await message.author.display_avatar.read(),
+
+        response = await self.http.post(
+            "https://api.voids.top/quote",
+            json={
+                "username": message.author.name,
+                "display_name": message.author.display_name,
+                "text": message.clean_content,
+                "avatar": message.author.display_avatar.url,
+                "color": True,
+            },
         )
-        await interaction.followup.send(file=discord.File(pic, "miq.png"))
+        jsonData = response.json()
+
+        response = await self.http.get(jsonData["url"])
+        img_bytes = io.BytesIO(response.content)
+
+        # Pillow処理を非同期にオフロード
+        output_buffer = await asyncio.to_thread(self.process_image, img_bytes)
+
+        await interaction.followup.send(file=discord.File(output_buffer, "miq.png"))
+
+    def process_image(self, img_bytes: io.BytesIO) -> io.BytesIO:
+        from PIL import Image, ImageDraw, ImageFont
+
+        img = Image.open(img_bytes).convert("RGBA")
+        draw = ImageDraw.Draw(img)
+
+        font_path = "./fonts/NotoSansJP-Medium.ttf"
+        font_size = int(img.height * 0.03)
+        font = ImageFont.truetype(font_path, font_size)
+
+        text = "discord.gg/aa-bot に今すぐ参加！"
+        x, y, x2, y2 = draw.textbbox((0, 0), text, font=font)
+        text_width = x2 - x
+        text_height = y2 - y
+
+        margin = 10
+        x = img.width - text_width - margin
+        y = img.height - text_height - margin
+        draw.text((x, y), text, font=font, fill=(255, 255, 255, 255))
+
+        output_buffer = io.BytesIO()
+        img.save(output_buffer, format="PNG")
+        output_buffer.seek(0)
+        return output_buffer
 
 
 async def setup(bot: commands.Bot):
