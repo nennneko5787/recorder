@@ -20,6 +20,9 @@ async def setup_hook():
     await bot.load_extension("cogs.miq")
     await bot.load_extension("cogs.tools")
     await bot.load_extension("cogs.guide")
+    await bot.load_extension("cogs.lightout")
+    await bot.load_extension("cogs.splash")
+    await bot.load_extension("cogs.shiritori")
     await bot.tree.sync()
 
 
