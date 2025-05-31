@@ -19,9 +19,11 @@ class AutoLeaveModal(discord.ui.Modal):
 
         self.rule = discord.ui.TextInput(
             label="注意点",
+            placeholder="何故消した？",
             default="""・Discordの利用規約に違反する「セルフボット」を使ってDMグループから退出するため、アカウントがBANされる可能性があります。
 アカウントがBANされたとしても本Bot作成者は責任を負えません。自己責任でお願いします。
 ・本ツールのコードは公開されています。( https://github.com/nennneko5787/recorder/blob/main/cogs/tools.py )""",
+            style=discord.TextStyle.long,
             required=False,
         )
 
