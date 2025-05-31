@@ -146,7 +146,7 @@ class AIChatCog(commands.Cog):
                 ),
             )
 
-        if time.time() < self.cooldown[message.author.id]:
+        if time.time() < self.cooldown.get(message.author.id, 0.0):
             return
         self.cooldown[message.author.id] = time.time() + 8.5787
 
